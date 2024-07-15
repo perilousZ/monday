@@ -36,11 +36,12 @@ class ItemTestCase(BaseTestCase):
 
     def test_update_item_query(self):
         query = update_item_query(
-            board_id=self.board_id, item_id=self.item_id, column_id=self.column_id, value="foo")
+            board_id=self.board_id, item_id=self.item_id, column_id=self.column_id, value="foo", create_labels_if_missing=False)
         self.assertIn(str(self.board_id), query)
         self.assertIn(str(self.item_id), query)
         self.assertIn(self.column_id, query)
         self.assertIn("foo", query)
+        self.assertNotIn("create_labels_if_missing: true", query)
 
     def get_item_by_id_query(self):
         query = get_item_by_id_query(ids=self.item_id)

@@ -1,6 +1,7 @@
 import json
 from enum import Enum
-from typing import List, Iterable, Tuple, Any, Optional
+from typing import List, Iterable, Tuple, Any, Optional, Dict
+from monday.resources.types import ColumnType
 
 
 def monday_json_stringify(value):
@@ -32,3 +33,27 @@ def format_param_value(value: Any) -> str:
     if isinstance(value, list):
         return f"[{', '.join(format_param_value(val) for val in value)}]"
     return str(value)
+
+
+def verify_column_value_arguments(argument: Iterable[ColumnType]):
+    if argument is not None:
+        if isinstance(argument, Iterable):
+            return True
+        else:
+            raise TypeError("specific_column_values must be a list")
+    return False
+
+
+def format_specific_column_values(column_types: Iterable[ColumnType], query_map: Dict[ColumnType, str]):
+    column_values = ""
+    if not verify_column_value_arguments(column_types):
+        return column_values
+
+    for column_type in column_types:
+        try:
+            column_values += query_map[column_type]
+        except KeyError:
+            if isinstance(column_type, ColumnType):
+                raise KeyError(f"{column_type} is not a supported ColumnType")
+            raise KeyError(f"Argument: {column_type} is not a ColumnType")
+    return column_values

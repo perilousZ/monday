@@ -1,12 +1,277 @@
 import json
 from enum import Enum
-from typing import List, Union, Optional, Mapping, Any
+from typing import List, Union, Optional, Mapping, Any, Dict, Iterable
 
 from monday.resources.types import BoardKind, BoardState, BoardsOrderBy, DuplicateType, ColumnType
-from monday.utils import monday_json_stringify, gather_params
+from monday.utils import monday_json_stringify, gather_params, format_specific_column_values, verify_column_value_arguments
 
 
 # Eventually I will organize this file better but you know what today is not that day.
+
+COLUMN_VALUES_SPECIFIC: Dict[ColumnType, str] = {
+    ColumnType.BUTTON: '''
+        ... on ButtonValue {
+            color
+            label
+        }''',
+    ColumnType.CHECKBOX: '''
+        ... on CheckboxValue {
+            checked
+            updated_at
+        }''',
+    ColumnType.COLOR_PICKER: '''
+        ... on ColorPickerValue {
+            color
+            updated_at
+        }''',
+    ColumnType.CONNECT_BOARDS: '''
+        ... on BoardRelationValue {
+            display_value
+            updated_at
+            linked_item_ids
+            linked_items {
+                name
+            }
+        }''',
+    ColumnType.COUNTRY: '''
+        ... on CountryValue {
+            country {
+                name
+                code
+            }
+            updated_at
+        }''',
+    ColumnType.CREATION_LOG: '''
+        ... on CreationLogValue {
+            created_at
+            creator {
+                name
+                id
+                email
+            }
+        }''',
+    ColumnType.DATE: '''
+        ... on DateValue {
+            time
+            date
+            updated_at
+            icon
+        }''',
+    ColumnType.DEPENDENCY: '''
+        ... on DependencyValue {
+            linked_item_ids
+            linked_items {
+                name
+            }
+            updated_at
+            display_value
+            updated_at
+        }''',
+    ColumnType.DROPDOWN: '''
+        ... on DropdownValue {
+            values {
+                id
+                label
+            }
+            column {
+                title
+            }
+        }''',
+    ColumnType.EMAIL: '''
+        ... on EmailValue {
+            email
+            updated_at
+            label
+        }
+        ''',
+    ColumnType.FILE: '''
+        ... on FileValue {
+            files
+        }
+        ''',
+    # There are no unique fields for Formula at the moment.
+    # Keeping this here for the possibility of the api
+    # granting access to the formula results for the column.
+    #    ColumnType.FORMULA: '''
+    #        ... on FormulaValue {
+    #            value
+    #        }
+    #        ''',
+    ColumnType.HOUR: '''
+        ... on HourValue {
+            minute
+            hour
+            updated_at
+        }
+        ''',
+    ColumnType.ITEM_ID: '''
+        ... on ItemIdValue {
+            item_id
+        }
+        ''',
+    ColumnType.LAST_UPDATED: '''
+        ... on LastUpdatedValue {
+            updated_at
+            updater {
+                name
+            }
+            updater_id
+        }
+        ''',
+    ColumnType.LINK: '''
+        ... on LinkValue {
+            url
+            url_text
+        }
+        ''',
+    ColumnType.LOCATION: '''
+        ... on LocationValue {
+            address
+            city
+            city_short
+            country
+            country_short
+            lat
+            lng
+            place_id
+            street
+            street_number
+            street_number_short
+            street_short
+            updated_at
+        }''',
+    ColumnType.LONG_TEXT: '''
+        ... on LongTextValue {
+            updated_at
+        }''',
+    ColumnType.MIRROR: '''
+        ... on MirrorValue {
+            column {
+                title
+            }
+            display_value
+            mirrored_items {
+                linked_item {
+                    name
+                    id
+                }
+                linked_board {
+                    name
+                }
+                linked_board_id
+                mirrored_value
+            }
+        }''',
+    ColumnType.MONDAY_DOC: '''
+        ... on DocValue {
+            file {
+                doc {
+                  name
+                  workspace_id
+                  relative_url
+                  settings
+                }
+                creator {
+                  id
+                  name
+                }
+                created_at
+            }
+        }''',
+    ColumnType.NUMBERS: '''
+        ... on NumbersValue {
+            number
+            symbol
+            direction
+        }''',
+    ColumnType.PEOPLE: '''
+        ... on PeopleValue {
+            persons_and_teams {
+                id
+                kind
+            }
+            updated_at
+        }''',
+    ColumnType.PHONE: '''
+        ... on PhoneValue {
+            country_short_name
+            phone
+            updated_at
+        }''',
+    # ColumnType.PROGRESS does not contain any specific column value queries
+    ColumnType.RATING: '''
+        ... on RatingValue {
+            rating
+            updated_at
+        }''',
+    ColumnType.STATUS: '''
+        ... on StatusValue {
+            index
+            is_done
+            label
+            label_style {
+                border
+                color
+            }
+            update_id
+            updated_at
+        }''',
+    ColumnType.TAGS: '''
+        ... on TagsValue {
+            tag_ids
+        }''',
+    # ColumnType.TEAM is deprecated and does not have any specific column queries
+    # ColumnType.TEXT does not have any specific column queries other than the core ones
+    ColumnType.TIMELINE: '''
+        ... on TimelineValue {
+            from
+            to
+            updated_at
+            visualization_type
+        }''',
+    ColumnType.TIME_TRACKING: '''
+        ... on TimeTrackingValue {
+            duration
+            history {
+                created_at
+                ended_at
+                ended_user_id
+                id
+                manually_entered_end_date
+                manually_entered_end_time
+                manually_entered_start_date
+                manually_entered_start_time
+                started_at
+                started_user_id
+                status
+                updated_at
+            }
+            running
+            started_at
+            updated_at
+        }''',
+    ColumnType.VOTE: '''
+        ... on VoteValue {
+            vote_count
+            voter_ids
+            updated_at
+        }''',
+    # voters is not presently working via rest but works in the monday.com playground
+    # voters {
+    #   name
+    # }
+    ColumnType.WEEK: '''
+        ... on WeekValue {
+            start_date
+            end_date
+        }''',
+    ColumnType.WORLD_CLOCK: '''
+        ... on WorldClockValue {
+            timezone
+            updated_at
+        }'''
+}
+
 
 # ITEM RESOURCE QUERIES
 def mutate_item_query(board_id, group_id, item_name, column_values, create_labels_if_missing):
@@ -83,7 +348,7 @@ def get_item_query(board_id, column_id, value, limit=None, cursor=None):
                         id
                         text
                         value
-                    }                
+                    }
                 }
             }
         }''' % items_page_params
@@ -91,35 +356,40 @@ def get_item_query(board_id, column_id, value, limit=None, cursor=None):
     return query
 
 
-def get_item_by_id_query(ids):
+def get_item_by_id_query(ids, specific_column_values: Optional[Iterable[ColumnType]]):
+    column_values = format_specific_column_values(specific_column_values,
+                                                  COLUMN_VALUES_SPECIFIC)
     query = '''query
         {
             items (ids: %s) {
-                id,
-                name,
+                id
+                name
                 group {
                     id
                     title
                 }
                 column_values {
-                    id,
-                    text,
+                    id
+                    text
                     value
+                    type
+                    %s
                 }
             }
-        }''' % ids
+        }''' % (ids, column_values)
 
     return query
 
 
-def update_item_query(board_id, item_id, column_id, value):
+def update_item_query(board_id, item_id, column_id, value, create_labels_if_missing):
     query = '''mutation
         {
             change_column_value(
                 board_id: %s,
                 item_id: %s,
                 column_id: "%s",
-                value: %s
+                value: %s,
+                create_labels_if_missing: %s
             ) {
                 id
                 name
@@ -129,7 +399,8 @@ def update_item_query(board_id, item_id, column_id, value):
                     value
                 }
             }
-        }''' % (board_id, item_id, column_id, monday_json_stringify(value))
+        }''' % (board_id, item_id, column_id, monday_json_stringify(value),
+                str(create_labels_if_missing).lower())
 
     return query
 
@@ -172,7 +443,7 @@ def delete_item_query(item_id):
 
 # COLUMNS RESOURCE QUERIES
 def create_column(
-        board_id: int, column_title: str, column_type: Optional[ColumnType] = None, defaults: Mapping[str, any] = None,
+        board_id: int, column_title: str, column_type: Optional[ColumnType] = None, defaults: Optional[Mapping[str, Any]] = None,
         description: str = ""
 ):
     defaults = defaults or {}
@@ -286,7 +557,7 @@ def delete_update_query(item_id):
 
 
 def get_updates_for_item_query(item, limit):
-    query = '''query{                
+    query = '''query{
         items(ids: %s){
             updates (limit: %s) {
                 id,
@@ -388,7 +659,7 @@ def get_board_items_query(board_id: Union[str, int], query_params: Optional[Mapp
     return query
 
 
-def get_boards_query(limit: int = None, page: int = None, ids: List[int] = None, board_kind: BoardKind = None,
+def get_boards_query(limit: Optional[int] = None, page: int = None, ids: List[int] = None, board_kind: BoardKind = None,
                      state: BoardState = None, order_by: BoardsOrderBy = None):
     parameters = locals().items()
     query_params = []

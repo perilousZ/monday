@@ -10,21 +10,26 @@ class DuplicateType(Enum):
 
 class ColumnType(Enum):
     AUTO_NUMBER = "auto_number"  # Number items according to their order in the group/board
+    BUTTON = "button"  # Allows you to perform an action
     CHECKBOX = "checkbox"  # Check off items and see what's done at a glance
-    COUNTRY = "country"  # Choose a country
     COLOR_PICKER = "color_picker"  # Manage a design system using a color palette
+    CONNECT_BOARDS = "connect_boards"  # Links an item on the board with an item(s) on a different board
+    COUNTRY = "country"  # Choose a country
     CREATION_LOG = "creation_log"  # Add the item's creator and creation date automatically
     DATE = "date"  # Add dates like deadlines to ensure you never drop the ball
     DEPENDENCY = "dependency"  # Set up dependencies between items in the board
     DROPDOWN = "dropdown"  # Create a dropdown list of options
     EMAIL = "email"  # Email team members and clients directly from your board
     FILE = "file"  # Add files & docs to your item
+    FORMULA = "formula"  # Calculates anything from simple mathematic equations to complex formulas
     HOUR = "hour"  # Add times to manage and schedule tasks, shifts and more
     ITEM_ID = "item_id"  # Show a unique ID for each item
     LAST_UPDATED = "last_updated"  # Add the person that last updated the item and the date
     LINK = "link"  # Simply hyperlink to any website
     LOCATION = "location"  # Place multiple locations on a geographic map
     LONG_TEXT = "long_text"  # Add large amounts of text without changing column width
+    MIRROR = "mirror"  # Shows a column value from another board through a linked item
+    MONDAY_DOC = "monday_doc"  # Virtual white boards
     NUMBERS = "numbers"  # Add revenue, costs, time estimations and more
     PEOPLE = "people"  # Assign people to improve team work
     PHONE = "phone"  # Call your contacts directly from monday.com

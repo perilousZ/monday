@@ -21,12 +21,12 @@ class ItemResource(BaseResource):
         query = get_item_query(board_id, column_id, value, limit, cursor)
         return self.client.execute(query)
 
-    def fetch_items_by_id(self, ids):
-        query = get_item_by_id_query(ids)
+    def fetch_items_by_id(self, ids, specific_column_values=None):
+        query = get_item_by_id_query(ids, specific_column_values)
         return self.client.execute(query)
 
-    def change_item_value(self, board_id, item_id, column_id, value):
-        query = update_item_query(board_id, item_id, column_id, value)
+    def change_item_value(self, board_id, item_id, column_id, value, create_labels_if_missing=False):
+        query = update_item_query(board_id, item_id, column_id, value, create_labels_if_missing)
         return self.client.execute(query)
 
     def change_multiple_column_values(self, board_id, item_id, column_values, create_labels_if_missing=False):
