@@ -1,7 +1,17 @@
 from monday.tests.test_case_resource import BaseTestCase
-from monday.query_joins import mutate_item_query, get_item_query, update_item_query, get_item_by_id_query, \
-    update_multiple_column_values_query, mutate_subitem_query, add_file_to_column_query, delete_item_query, \
-    archive_item_query, move_item_to_group_query
+from monday.resources.types import ColumnType
+from monday.query_joins import (
+    mutate_item_query,
+    get_item_query,
+    update_item_query,
+    get_item_by_id_query,
+    update_multiple_column_values_query,
+    mutate_subitem_query,
+    add_file_to_column_query,
+    delete_item_query,
+    archive_item_query,
+    move_item_to_group_query,
+    COLUMN_VALUES_SPECIFIC)
 from monday.utils import monday_json_stringify
 
 
@@ -43,9 +53,29 @@ class ItemTestCase(BaseTestCase):
         self.assertIn("foo", query)
         self.assertNotIn("create_labels_if_missing: true", query)
 
-    def get_item_by_id_query(self):
+    def test_get_item_by_id_query(self):
         query = get_item_by_id_query(ids=self.item_id)
         self.assertIn(str(self.item_id), query)
+
+    def test_get_item_by_id_with_specific_column_values(self):
+        unsupported_columns = [
+            ColumnType.AUTO_NUMBER,
+            ColumnType.FORMULA,
+            ColumnType.PROGRESS,
+            ColumnType.TEAM,
+            ColumnType.TEXT,
+        ]
+        for column_type in ColumnType:
+            if column_type in unsupported_columns:
+                self.assertRaises(KeyError, get_item_by_id_query, ids=self.item_id, specific_column_values=[column_type])
+                continue
+            query = get_item_by_id_query(ids=self.item_id, specific_column_values=[column_type])
+            self.assertIn(COLUMN_VALUES_SPECIFIC[column_type], query)
+
+    def test_get_item_by_id_specific_errors(self):
+        self.assertRaises(TypeError, get_item_by_id_query, ids=self.item_id, specific_column_values="string")
+        self.assertRaises(TypeError, get_item_by_id_query, ids=self.item_id, specific_column_values=ColumnType.MIRROR)
+        self.assertRaises(KeyError, get_item_by_id_query, ids=self.item_id, specific_column_values=["mirror"])
 
     def test_update_multiple_column_values(self):
         query = update_multiple_column_values_query(board_id=self.board_id, item_id=self.item_id,

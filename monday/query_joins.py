@@ -3,7 +3,7 @@ from enum import Enum
 from typing import List, Union, Optional, Mapping, Any, Dict, Iterable
 
 from monday.resources.types import BoardKind, BoardState, BoardsOrderBy, DuplicateType, ColumnType
-from monday.utils import monday_json_stringify, gather_params, format_specific_column_values, verify_column_value_arguments
+from monday.utils import monday_json_stringify, gather_params, format_specific_column_values
 
 
 # Eventually I will organize this file better but you know what today is not that day.
@@ -89,14 +89,8 @@ COLUMN_VALUES_SPECIFIC: Dict[ColumnType, str] = {
             files
         }
         ''',
-    # There are no unique fields for Formula at the moment.
-    # Keeping this here for the possibility of the api
-    # granting access to the formula results for the column.
-    #    ColumnType.FORMULA: '''
-    #        ... on FormulaValue {
-    #            value
-    #        }
-    #        ''',
+    # ColumnType.FORMULA does not have any unique fields.
+    # Maybe one day we'll be able to get formula results.
     ColumnType.HOUR: '''
         ... on HourValue {
             minute
@@ -356,9 +350,12 @@ def get_item_query(board_id, column_id, value, limit=None, cursor=None):
     return query
 
 
-def get_item_by_id_query(ids, specific_column_values: Optional[Iterable[ColumnType]]):
-    column_values = format_specific_column_values(specific_column_values,
-                                                  COLUMN_VALUES_SPECIFIC)
+def get_item_by_id_query(ids, specific_column_values: Optional[List[ColumnType]] = None):
+    column_values = ""
+    if specific_column_values is not None:
+        column_values = format_specific_column_values(specific_column_values,
+                                                      COLUMN_VALUES_SPECIFIC)
+
     query = '''query
         {
             items (ids: %s) {

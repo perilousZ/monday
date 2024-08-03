@@ -35,20 +35,10 @@ def format_param_value(value: Any) -> str:
     return str(value)
 
 
-def verify_column_value_arguments(argument: Iterable[ColumnType]):
-    if argument is not None:
-        if isinstance(argument, Iterable):
-            return True
-        else:
-            raise TypeError("specific_column_values must be a list")
-    return False
-
-
-def format_specific_column_values(column_types: Iterable[ColumnType], query_map: Dict[ColumnType, str]):
+def format_specific_column_values(column_types: List[ColumnType], query_map: Dict[ColumnType, str]):
     column_values = ""
-    if not verify_column_value_arguments(column_types):
-        return column_values
-
+    if not isinstance(column_types, list):
+        raise TypeError("specific_column_values must be a list")
     for column_type in column_types:
         try:
             column_values += query_map[column_type]

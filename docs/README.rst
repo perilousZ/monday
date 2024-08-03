@@ -43,10 +43,12 @@ Getting started
 -  ``fetch_items_by_column_value(board_id, column_id, value)`` - Fetch
    items on a board by column value.
 
--  ``fetch_items_by_id(board_id, [ids])`` - Fetch items from any board
-   by ids, passed in as an array of integers.
+-  ``fetch_items_by_id([ids], specific_column_values=None)`` - Fetch items from any board
+   by ids, passed in as an array of integers. Pass in a single column type or
+   a list of column types (resources.types.ColumnType) Enums to retrieve more
+   specific column value types.
 
--  ``change_item_value(board_id, item_id, column_id, value)`` - Change
+-  ``change_item_value(board_id, item_id, column_id, value, create_labels_if_missing=False)`` - Change
    column values for item on a board. Check Monday’s API for which
    columns are supported.
 
